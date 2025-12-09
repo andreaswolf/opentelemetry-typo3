@@ -1,0 +1,23 @@
+{
+    "name": "a9f/opentelemetry-auto-typo3",
+    "type": "library",
+    "description": "OpenTelemetry integration for TYPO3",
+    "autoload": {
+        "psr-4": {
+            "a9f\\OpenTelemetryTYPO3\\": "src/"
+        }
+    },
+    "require": {
+        "ext-opentelemetry": "*",
+        "php": "^8.3",
+        "open-telemetry/api": "^1.7",
+        "open-telemetry/sem-conv": "^1.37",
+        "open-telemetry/sdk": "^1.10",
+        "typo3/cms-core": "^12.4 || ^13.4",
+        "typo3/cms-extbase": "^12.4 || ^13.4",
+        "typo3/cms-frontend": "^12.4 || ^13.4"
+    },
+    "config": {
+        "sort-packages": true
+    }
+}
