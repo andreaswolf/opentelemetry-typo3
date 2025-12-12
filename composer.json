@@ -5,7 +5,10 @@
     "autoload": {
         "psr-4": {
             "a9f\\OpenTelemetryTYPO3\\": "src/"
-        }
+        },
+	"files": [
+            "_register.php"
+	]
     },
     "require": {
         "ext-opentelemetry": "*",
