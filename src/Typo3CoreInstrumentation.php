@@ -72,7 +72,7 @@ final class Typo3CoreInstrumentation
         hook(
             Bootstrap::class,
             'init',
-            post: static function (array $params, ContainerInterface $container) {
+            post: static function (string $class, array $params, ContainerInterface $container) {
                 $requestIdFromContainer = $container->get(RequestId::class);
 
                 if ($requestIdFromContainer !== null) {
