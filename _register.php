@@ -6,6 +6,7 @@ use a9f\OpenTelemetryTYPO3\Attributes\SpanAttributesBag;
 use a9f\OpenTelemetryTYPO3\Attributes\SpanAttributesProcessor;
 use a9f\OpenTelemetryTYPO3\Typo3CoreInstrumentation;
 use a9f\OpenTelemetryTYPO3\Typo3ExtbaseInstrumentation;
+use a9f\OpenTelemetryTYPO3\Typo3TyposcriptInstrumentation;
 use OpenTelemetry\API\Globals;
 use OpenTelemetry\API\Instrumentation\Configurator;
 use OpenTelemetry\SDK\Common\Configuration\Configuration;
@@ -62,5 +63,10 @@ if (Sdk::isDisabled() || Sdk::isInstrumentationDisabled(Typo3CoreInstrumentation
 })();
 if (Sdk::isInstrumentationDisabled(Typo3CoreInstrumentation::NAME) === false) {
     Typo3CoreInstrumentation::register();
+}
+if (Sdk::isInstrumentationDisabled(Typo3ExtbaseInstrumentation::NAME) === false) {
     Typo3ExtbaseInstrumentation::register();
+}
+if (Sdk::isInstrumentationDisabled(Typo3TyposcriptInstrumentation::NAME) === false) {
+    Typo3TyposcriptInstrumentation::register();
 }
