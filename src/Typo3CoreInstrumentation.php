@@ -259,7 +259,7 @@ final class Typo3CoreInstrumentation
     private static function setRequestDataInSpan(SpanBuilderInterface $spanBuilder, ServerRequestInterface $request): void
     {
         $spanBuilder
-            ->setAttribute(UrlAttributes::URL_FULL, $request->getUri())
+            ->setAttribute(UrlAttributes::URL_FULL, (string)$request->getUri())
             ->setAttribute(HttpAttributes::HTTP_REQUEST_METHOD, $request->getMethod())
             ->setAttribute(HttpIncubatingAttributes::HTTP_REQUEST_BODY_SIZE, $request->getHeader('Content-Length'))
             ->setAttribute(UrlAttributes::URL_SCHEME, $request->getUri()->getScheme())
