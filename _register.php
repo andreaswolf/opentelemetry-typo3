@@ -16,6 +16,7 @@ use OpenTelemetry\SDK\Metrics\MeterProviderFactory;
 use OpenTelemetry\SDK\Resource\ResourceInfoFactory;
 use OpenTelemetry\SDK\Sdk;
 use OpenTelemetry\SDK\Trace\ExporterFactory;
+use OpenTelemetry\SDK\Trace\SamplerFactory;
 use OpenTelemetry\SDK\Trace\SpanProcessorFactory;
 use OpenTelemetry\SDK\Trace\TracerProviderBuilder;
 
@@ -49,8 +50,10 @@ if (Sdk::isDisabled() || Sdk::isInstrumentationDisabled(Typo3CoreInstrumentation
         $emitMetrics = Configuration::getBoolean(Variables::OTEL_PHP_INTERNAL_METRICS_ENABLED);
         $meterProvider = (new MeterProviderFactory())->create($resource);
         $spanProcessor = (new SpanProcessorFactory())->create($exporter, $emitMetrics ? $meterProvider : null);
+        $sampler = (new SamplerFactory())->create();
 
         $tracerProvider = (new TracerProviderBuilder())
+            ->setSampler($sampler)
             ->addSpanProcessor(new SpanAttributesProcessor(SpanAttributesBag::instance()))
             ->addSpanProcessor($spanProcessor)
             ->build();
