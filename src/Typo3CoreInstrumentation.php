@@ -18,6 +18,8 @@ use OpenTelemetry\Context\ContextInterface;
 use TYPO3\CMS\Core\Database\ReferenceIndex;
 use TYPO3\CMS\Core\DataHandling\DataHandler;
 use TYPO3\CMS\Core\DataHandling\ReferenceIndexUpdater;
+use TYPO3\CMS\Core\Routing\PageArguments;
+use TYPO3\CMS\Frontend\Middleware\PageResolver;
 use function OpenTelemetry\Instrumentation\hook;
 
 use OpenTelemetry\SemConv\Attributes\CodeAttributes;
@@ -56,10 +58,11 @@ final class Typo3CoreInstrumentation
     public const string ENTRYPOINT = 'typo3.entrypoint';
     public const string REQUEST_ID = 'typo3.request.id';
     public const string FRONTEND_AUTHENTICATED = 'typo3.frontend.authenticated';
-    public const string FRONTEND_USERID = 'typo3.frontend.userid';
-    public const string FRONTEND_USERNAME = 'typo3.frontend.username';
+    public const string FRONTEND_USERID = 'typo3.frontend.user.uid';
+    public const string FRONTEND_USERNAME = 'typo3.frontend.user.username';
     public const string FRONTEND_USERGROUP_IDS = 'typo3.frontend.usergroups.ids';
     public const string FRONTEND_USERGROUP_NAMES = 'typo3.frontend.usergroups.names';
+    public const string FRONTEND_PAGEID = 'typo3.frontend.page.uid';
 
     private static RequestId|null $requestId = null;
 
@@ -174,6 +177,28 @@ final class Typo3CoreInstrumentation
                         ->add(self::FRONTEND_USERGROUP_IDS, $frontendUserAspect->get('groupIds'))
                         ->add(self::FRONTEND_USERGROUP_NAMES, $frontendUserAspect->get('groupNames'));
                 }
+            }
+        );
+        /**
+         * This augments {@see PageResolver}. Since there is no method except process() in there, we must watch for
+         * the ServerRequestInterface::withAttribute() call instead.
+         */
+        hook(
+            ServerRequestInterface::class,
+            'withAttribute',
+            pre: static function (ServerRequestInterface $authenticator, array $params, string $class, string $function, ?string $filename, ?int $lineno) {
+                $attribute = $params[0];
+                if ($attribute !== 'routing') {
+                    return;
+                }
+
+                $pageArguments = $params[1];
+                if (!$pageArguments instanceof PageArguments) {
+                    return;
+                }
+                $attributes = SpanAttributesBag::instance();
+                $attributes
+                    ->add(self::FRONTEND_PAGEID, $pageArguments->getPageId());
             }
         );
 
