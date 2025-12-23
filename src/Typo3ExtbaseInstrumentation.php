@@ -31,6 +31,7 @@ class Typo3ExtbaseInstrumentation
     public const EXTBASE_PLUGIN = 'typo3.extbase.plugin';
     public const EXTBASE_EXTENSION = 'typo3.extbase.extension';
     public const EXTBASE_CONTROLLER = 'typo3.extbase.controller';
+    public const EXTBASE_ACTION = 'typo3.extbase.action';
 
     public static function register(): void
     {
@@ -74,7 +75,8 @@ class Typo3ExtbaseInstrumentation
                 SpanAttributesBag::instance()
                     ->remove(self::EXTBASE_PLUGIN)
                     ->remove(self::EXTBASE_EXTENSION)
-                    ->remove(self::EXTBASE_CONTROLLER);
+                    ->remove(self::EXTBASE_CONTROLLER)
+                    ->remove(self::EXTBASE_ACTION);
 
                 self::end($response, $exception);
             }
@@ -91,7 +93,8 @@ class Typo3ExtbaseInstrumentation
             SpanAttributesBag::instance()
                 ->add(self::EXTBASE_PLUGIN, $request->getPluginName())
                 ->add(self::EXTBASE_EXTENSION, $request->getControllerExtensionKey())
-                ->add(self::EXTBASE_CONTROLLER, $request->getControllerName());
+                ->add(self::EXTBASE_CONTROLLER, $request->getControllerName())
+                ->add(self::EXTBASE_ACTION, $request->getControllerActionName());
         }
 
         $spanBuilder = $instrumentation->tracer()
