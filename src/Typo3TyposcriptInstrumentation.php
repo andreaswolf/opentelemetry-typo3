@@ -49,13 +49,13 @@ final class Typo3TyposcriptInstrumentation
 
                 Context::storage()->attach($span->storeInContext(Context::getCurrent()));
             },
-            post: static function (ContentObjectRenderer $renderer, array $params, string $output, ?\Throwable $exception) {
+            post: static function (ContentObjectRenderer $renderer, array $params, mixed $return, ?\Throwable $exception) {
                 SpanAttributesBag::instance()
                     ->remove(self::OBJECT_TYPE)
                     ->remove(self::TYPOSCRIPT_KEY)
                     ->remove(self::CONTENT_TABLE)
                     ->remove(self::CONTENT_UID);
-                self::end($output, $exception);
+                self::end($return, $exception);
             }
         );
     }
@@ -79,7 +79,7 @@ final class Typo3TyposcriptInstrumentation
         return $spanBuilder;
     }
 
-    private static function end(string $output, ?\Throwable $exception): void
+    private static function end(mixed $output, ?\Throwable $exception): void
     {
         $scope = Context::storage()->scope();
         if (!$scope) {
@@ -96,7 +96,9 @@ final class Typo3TyposcriptInstrumentation
             $span->recordException($exception, [TraceAttributes::EXCEPTION_ESCAPED => true]);
             $span->setStatus(StatusCode::STATUS_ERROR, $exception->getMessage());
         }
-        $span->setAttribute(TraceAttributes::HTTP_RESPONSE_BODY_SIZE, strlen($output));
+        if (is_string($output)) {
+            $span->setAttribute(TraceAttributes::HTTP_RESPONSE_BODY_SIZE, strlen($output));
+        }
 
         $span->end();
     }
