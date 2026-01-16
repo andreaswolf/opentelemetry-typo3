@@ -14,17 +14,10 @@ use OpenTelemetry\API\Trace\SpanKind;
 use OpenTelemetry\API\Trace\StatusCode;
 use OpenTelemetry\Context\Context;
 use OpenTelemetry\Context\ContextInterface;
-
-use TYPO3\CMS\Core\Database\ReferenceIndex;
-use TYPO3\CMS\Core\DataHandling\DataHandler;
-use TYPO3\CMS\Core\DataHandling\ReferenceIndexUpdater;
 use TYPO3\CMS\Frontend\ContentObject\DataProcessorInterface;
-use function OpenTelemetry\Instrumentation\hook;
-
 use OpenTelemetry\SemConv\Attributes\CodeAttributes;
 use OpenTelemetry\SemConv\Attributes\HttpAttributes;
 use OpenTelemetry\SemConv\Attributes\ServerAttributes;
-
 use OpenTelemetry\SemConv\Attributes\UrlAttributes;
 use OpenTelemetry\SemConv\Attributes\UserAgentAttributes;
 use OpenTelemetry\SemConv\Incubating\Attributes\HttpIncubatingAttributes;
@@ -34,15 +27,21 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Symfony\Component\Console\Input\ArgvInput;
 use TYPO3\CMS\Backend\Http\Application as BackendApplication;
+use TYPO3\CMS\Core\Authentication\AbstractUserAuthentication;
+use TYPO3\CMS\Core\Authentication\LoginType;
 use TYPO3\CMS\Core\Console\CommandApplication;
 use TYPO3\CMS\Core\Context\UserAspect;
 use TYPO3\CMS\Core\Core\Bootstrap;
 use TYPO3\CMS\Core\Core\RequestId;
+use TYPO3\CMS\Core\Database\ReferenceIndex;
+use TYPO3\CMS\Core\DataHandling\DataHandler;
+use TYPO3\CMS\Core\Domain\Repository\PageRepository;
 use TYPO3\CMS\Core\Http\AbstractApplication;
 use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 use TYPO3\CMS\Frontend\Http\Application as FrontendApplication;
 use TYPO3\CMS\Frontend\Middleware\FrontendUserAuthenticator;
 use TYPO3\CMS\Install\Http\Application as InstallApplication;
+use function OpenTelemetry\Instrumentation\hook;
 
 /**
  * Instrumentation for the TYPO3 Core classes. Currently adds instrumentation around the entrypoints for CLI/BE/FE/Install
@@ -56,11 +55,15 @@ final class Typo3CoreInstrumentation
 
     public const string ENTRYPOINT = 'typo3.entrypoint';
     public const string REQUEST_ID = 'typo3.request.id';
+    public const string CANONICALIZED_PATH = 'typo3.request.canonicalized_path';
     public const string FRONTEND_AUTHENTICATED = 'typo3.frontend.authenticated';
     public const string FRONTEND_USERID = 'typo3.frontend.userid';
     public const string FRONTEND_USERNAME = 'typo3.frontend.username';
     public const string FRONTEND_USERGROUP_IDS = 'typo3.frontend.usergroups.ids';
     public const string FRONTEND_USERGROUP_NAMES = 'typo3.frontend.usergroups.names';
+
+    public const string METRIC_SUCCESSFUL_LOGINS = 'typo3.{logintype}.login.successful';
+    public const string METRIC_FAILED_LOGINS = 'typo3.{logintype}.login.failed';
 
     private static RequestId|null $requestId = null;
 
@@ -108,8 +111,9 @@ final class Typo3CoreInstrumentation
                         ['$1*$2', '$1*'],
                         $requestedPath
                     );
-                    $name = sprintf('%s %s', $request->getMethod(), $canonicalizedPath);
+                    $name = $request->getMethod();
                     $spanBuilder = self::createSpanBuilder($name, $parent, $instrumentation, $entrypoint, $class, $function, $filename, $lineno);
+                    $spanBuilder->setAttribute(self::CANONICALIZED_PATH, $canonicalizedPath);
 
                     self::setRequestDataInSpan($spanBuilder, $request);
 
@@ -154,6 +158,7 @@ final class Typo3CoreInstrumentation
             FrontendUserAuthenticator::class,
             'process',
             post: static function (FrontendUserAuthenticator $authenticator, array $params, ?ResponseInterface $response, ?\Throwable $exception) {
+                // TODO this is questionable
                 SpanAttributesBag::instance()
                     ->remove(self::FRONTEND_AUTHENTICATED)
                     ->remove(self::FRONTEND_USERID)
@@ -178,22 +183,66 @@ final class Typo3CoreInstrumentation
             }
         );
         hook(
-            DataProcessorInterface::class,
-            'process',
-            pre: static function (DataProcessorInterface $processor, array $params, string $class, string $function, ?string $filename, ?int $lineno) use ($instrumentation) {
+            PageRepository::class,
+            'getMenu',
+            pre: static function (PageRepository $repository, array $params, string $class, string $function, ?string $filename, ?int $lineno) use ($instrumentation) {
                 $parent = Context::getCurrent();
 
                 $spanBuilder = $instrumentation->tracer()
-                    ->spanBuilder('DataProcessor')
-                    ->setParent($parent)
-                    ->setAttribute('typo3.dataprocessor', $class);
+                    ->spanBuilder('PageRepository:getMenu')
+                    ->setParent($parent);
+                $spanBuilder->setAttribute('menu.uid', $params[0]);
 
                 $span = $spanBuilder->startSpan();
 
                 Context::storage()->attach($span->storeInContext(Context::getCurrent()));
             },
-            post: static function (DataProcessorInterface $processor, array $params, array $return, ?\Throwable $exception) {
+            post: static function (PageRepository $repository, array $params, array $menuItems, ?\Throwable $exception) {
                 self::endSpanWithoutReturnValue($exception);
+            }
+        );
+
+        /**
+         * @var bool|null $activeLogin If true, the current request contains login data => a login attempt will happen
+         *                  We need to track this, since everything happens inside {@see AbstractUserAuthentication::checkAuthentication()}
+         */
+        $activeLogin = null;
+        hook(
+            AbstractUserAuthentication::class,
+            'getLoginFormData',
+            pre: static function (AbstractUserAuthentication $authenticator, array $params, string $class, string $function, ?string $filename, ?int $lineno) use ($instrumentation, &$activeLogin) {
+            },
+            post: static function (AbstractUserAuthentication $authenticator, array $params, array $return, ?\Throwable $exception) use (&$activeLogin) {
+                $activeLogin = $return['status'] === LoginType::LOGIN->value;
+            }
+        );
+        hook(
+            AbstractUserAuthentication::class,
+            'checkAuthentication',
+            pre: static function (AbstractUserAuthentication $authenticator, array $params, string $class, string $function, ?string $filename, ?int $lineno) {
+            },
+            post: static function (AbstractUserAuthentication $authenticator, array $params, mixed $return, ?\Throwable $exception) use ($instrumentation, &$activeLogin) {
+                if (!$activeLogin) {
+                    return;
+                }
+                // we must reset the flag since there is at least two instances of the authenticator (BE and FE)
+                $activeLogin = null;
+                $loginType = match ($authenticator->loginType) {
+                    'FE' => 'frontend',
+                    'BE' => 'backend',
+                    default => null,
+                };
+                if ($loginType === null) {
+                    // we don't need to trace e.g. CLI logins
+                    return;
+                }
+
+                $successfulLogin = !$authenticator->getSession()->isAnonymous();
+                $metricName = $successfulLogin ? self::METRIC_SUCCESSFUL_LOGINS : self::METRIC_FAILED_LOGINS;
+                $metricName = str_replace('{loginType}', $loginType, $metricName);
+
+                $counter = $instrumentation->meter()->createCounter($metricName);
+                $counter->add(1);
             }
         );
 
@@ -287,7 +336,12 @@ final class Typo3CoreInstrumentation
             ->setAttribute(UserAgentAttributes::USER_AGENT_ORIGINAL, $request->getHeader('User-Agent'))
             ->setAttribute(ServerAttributes::SERVER_ADDRESS, $request->getUri()->getHost())
             ->setAttribute(ServerAttributes::SERVER_PORT, $request->getUri()->getPort());
+        SpanAttributesBag::instance()
+            ->add(UrlAttributes::URL_FULL, (string)$request->getUri())
+            ->add(HttpAttributes::HTTP_REQUEST_METHOD, $request->getMethod());
         if (self::$requestId !== null) {
+            SpanAttributesBag::instance()
+                ->add(self::REQUEST_ID, (string)self::$requestId);
             $spanBuilder
                 ->setAttribute(self::REQUEST_ID, (string)self::$requestId);
         }
