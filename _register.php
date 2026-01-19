@@ -59,9 +59,11 @@ if (Sdk::isDisabled() || Sdk::isInstrumentationDisabled(Typo3CoreInstrumentation
             ->build();
 
         ShutdownHandler::register($tracerProvider->shutdown(...));
+        ShutdownHandler::register($meterProvider->shutdown(...));
 
         return $configurator
-            ->withTracerProvider($tracerProvider);
+            ->withTracerProvider($tracerProvider)
+            ->withMeterProvider($meterProvider);
     });
 })();
 if (Sdk::isInstrumentationDisabled(Typo3CoreInstrumentation::NAME) === false) {
