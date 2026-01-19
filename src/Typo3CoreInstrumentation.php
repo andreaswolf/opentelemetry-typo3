@@ -202,49 +202,6 @@ final class Typo3CoreInstrumentation
             }
         );
 
-        /**
-         * @var bool|null $activeLogin If true, the current request contains login data => a login attempt will happen
-         *                  We need to track this, since everything happens inside {@see AbstractUserAuthentication::checkAuthentication()}
-         */
-        $activeLogin = null;
-        hook(
-            AbstractUserAuthentication::class,
-            'getLoginFormData',
-            pre: static function (AbstractUserAuthentication $authenticator, array $params, string $class, string $function, ?string $filename, ?int $lineno) use ($instrumentation, &$activeLogin) {
-            },
-            post: static function (AbstractUserAuthentication $authenticator, array $params, array $return, ?\Throwable $exception) use (&$activeLogin) {
-                $activeLogin = $return['status'] === LoginType::LOGIN->value;
-            }
-        );
-        hook(
-            AbstractUserAuthentication::class,
-            'checkAuthentication',
-            pre: static function (AbstractUserAuthentication $authenticator, array $params, string $class, string $function, ?string $filename, ?int $lineno) {
-            },
-            post: static function (AbstractUserAuthentication $authenticator, array $params, mixed $return, ?\Throwable $exception) use ($instrumentation, &$activeLogin) {
-                if (!$activeLogin) {
-                    return;
-                }
-                // we must reset the flag since there is at least two instances of the authenticator (BE and FE)
-                $activeLogin = null;
-                $loginType = match ($authenticator->loginType) {
-                    'FE' => 'frontend',
-                    'BE' => 'backend',
-                    default => null,
-                };
-                if ($loginType === null) {
-                    // we don't need to trace e.g. CLI logins
-                    return;
-                }
-
-                $successfulLogin = !$authenticator->getSession()->isAnonymous();
-                $metricName = $successfulLogin ? self::METRIC_SUCCESSFUL_LOGINS : self::METRIC_FAILED_LOGINS;
-                $metricName = str_replace('{loginType}', $loginType, $metricName);
-
-                $counter = $instrumentation->meter()->createCounter($metricName);
-                $counter->add(1);
-            }
-        );
 
 
         foreach (
