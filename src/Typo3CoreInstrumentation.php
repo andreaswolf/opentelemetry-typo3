@@ -183,6 +183,25 @@ final class Typo3CoreInstrumentation
             }
         );
         hook(
+            DataProcessorInterface::class,
+            'process',
+            pre: static function (DataProcessorInterface $processor, array $params, string $class, string $function, ?string $filename, ?int $lineno) use ($instrumentation) {
+                $parent = Context::getCurrent();
+
+                $spanBuilder = $instrumentation->tracer()
+                    ->spanBuilder('DataProcessor')
+                    ->setParent($parent)
+                    ->setAttribute('typo3.dataprocessor', $class);
+
+                $span = $spanBuilder->startSpan();
+
+                Context::storage()->attach($span->storeInContext(Context::getCurrent()));
+            },
+            post: static function (DataProcessorInterface $processor, array $params, array $return, ?\Throwable $exception) {
+                self::endSpanWithoutReturnValue($exception);
+            }
+        );
+        hook(
             PageRepository::class,
             'getMenu',
             pre: static function (PageRepository $repository, array $params, string $class, string $function, ?string $filename, ?int $lineno) use ($instrumentation) {
