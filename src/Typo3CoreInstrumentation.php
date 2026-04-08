@@ -41,6 +41,7 @@ use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 use TYPO3\CMS\Frontend\Http\Application as FrontendApplication;
 use TYPO3\CMS\Frontend\Middleware\FrontendUserAuthenticator;
 use TYPO3\CMS\Install\Http\Application as InstallApplication;
+use TYPO3\CMS\Redirects\Service\RedirectService;
 use function OpenTelemetry\Instrumentation\hook;
 
 /**
@@ -307,6 +308,37 @@ final class Typo3CoreInstrumentation
                 Context::storage()->attach($span->storeInContext(Context::getCurrent()));
             },
             post: static function (ReferenceIndex $obj, array $params, $return, ?\Throwable $exception) {
+                self::endSpanWithoutReturnValue($exception);
+            }
+        );
+
+        hook(
+            RedirectService::class,
+            'matchRedirect',
+            pre: static function (RedirectService $obj, array $params, string $class, string $function, ?string $filename, ?int $lineno) use ($instrumentation) {
+                $parent = Context::getCurrent();
+
+                $spanBuilder = $instrumentation->tracer()
+                    ->spanBuilder('RedirectService::matchRedirect')
+                    ->setParent($parent);
+                $spanBuilder->setAttribute('typo3.redirect.source.domain', $params[0])
+                    ->setAttribute('typo3.redirect.source.path', $params[1]);
+
+                $span = $spanBuilder->startSpan();
+
+                Context::storage()->attach($span->storeInContext(Context::getCurrent()));
+            },
+            post: static function (RedirectService $obj, array $params, $return, ?\Throwable $exception) {
+                $scope = Context::storage()->scope();
+                if (!$scope) {
+                    return;
+                }
+                $span = Span::fromContext($scope->context());
+                $span->setAttribute('typo3.redirect.hit', $return !== null);
+                if ($return !== null) {
+                    $span->setAttribute('typo3.redirect.uid', $return['uid']);
+                }
+
                 self::endSpanWithoutReturnValue($exception);
             }
         );
