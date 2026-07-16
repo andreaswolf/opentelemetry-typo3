@@ -14,15 +14,16 @@ use OpenTelemetry\API\Trace\StatusCode;
 use OpenTelemetry\Context\Context;
 use OpenTelemetry\Context\ContextInterface;
 
-use function OpenTelemetry\Instrumentation\hook;
-
 use OpenTelemetry\SemConv\Attributes\CodeAttributes;
+
 use OpenTelemetry\SemConv\TraceAttributes;
 use Psr\Http\Message\ResponseInterface;
 use TYPO3\CMS\Extbase\Mvc\Controller\ControllerInterface;
 use TYPO3\CMS\Extbase\Mvc\Dispatcher;
 use TYPO3\CMS\Extbase\Mvc\Request;
 use TYPO3\CMS\Extbase\Mvc\RequestInterface;
+
+use function OpenTelemetry\Instrumentation\hook;
 
 class Typo3ExtbaseInstrumentation
 {

@@ -14,7 +14,6 @@ use OpenTelemetry\API\Trace\SpanKind;
 use OpenTelemetry\API\Trace\StatusCode;
 use OpenTelemetry\Context\Context;
 use OpenTelemetry\Context\ContextInterface;
-use TYPO3\CMS\Frontend\ContentObject\DataProcessorInterface;
 use OpenTelemetry\SemConv\Attributes\CodeAttributes;
 use OpenTelemetry\SemConv\Attributes\HttpAttributes;
 use OpenTelemetry\SemConv\Attributes\ServerAttributes;
@@ -42,6 +41,7 @@ use TYPO3\CMS\Frontend\Http\Application as FrontendApplication;
 use TYPO3\CMS\Frontend\Middleware\FrontendUserAuthenticator;
 use TYPO3\CMS\Install\Http\Application as InstallApplication;
 use TYPO3\CMS\Redirects\Service\RedirectService;
+
 use function OpenTelemetry\Instrumentation\hook;
 
 /**
@@ -66,7 +66,7 @@ final class Typo3CoreInstrumentation
     public const string METRIC_SUCCESSFUL_LOGINS = 'typo3_{logintype}_login_successful';
     public const string METRIC_FAILED_LOGINS = 'typo3_{logintype}_login_failed';
 
-    private static RequestId|null $requestId = null;
+    private static ?RequestId $requestId = null;
 
     public static function register(): void
     {
@@ -80,9 +80,7 @@ final class Typo3CoreInstrumentation
             post: static function (string $class, array $params, ContainerInterface $container) {
                 $requestIdFromContainer = $container->get(RequestId::class);
 
-                if ($requestIdFromContainer !== null) {
-                    self::$requestId = $requestIdFromContainer;
-                }
+                self::$requestId = $requestIdFromContainer;
             }
         );
 
@@ -112,7 +110,7 @@ final class Typo3CoreInstrumentation
                         ['$1*$2', '$1*'],
                         $requestedPath
                     );
-                    $name = $request->getMethod();
+                    $name = $request->getMethod() ?: 'n/a';
                     $spanBuilder = self::createSpanBuilder($name, $parent, $instrumentation, $entrypoint, $class, $function, $filename, $lineno);
                     $spanBuilder->setAttribute(self::CANONICALIZED_PATH, $canonicalizedPath);
 
@@ -211,8 +209,7 @@ final class Typo3CoreInstrumentation
         hook(
             FrontendUserAuthentication::class,
             'getLoginFormData',
-            pre: static function (FrontendUserAuthentication $authenticator, array $params, string $class, string $function, ?string $filename, ?int $lineno) use ($instrumentation, &$activeLogin) {
-            },
+            pre: static function (FrontendUserAuthentication $authenticator, array $params, string $class, string $function, ?string $filename, ?int $lineno) {},
             post: static function (FrontendUserAuthentication $authenticator, array $params, array $return, ?\Throwable $exception) use (&$activeLogin) {
                 $activeLogin = $return['status'] === LoginType::LOGIN->value;
             }
@@ -220,8 +217,7 @@ final class Typo3CoreInstrumentation
         hook(
             AbstractUserAuthentication::class,
             'getLoginFormData',
-            pre: static function (AbstractUserAuthentication $authenticator, array $params, string $class, string $function, ?string $filename, ?int $lineno) use ($instrumentation, &$activeLogin) {
-            },
+            pre: static function (AbstractUserAuthentication $authenticator, array $params, string $class, string $function, ?string $filename, ?int $lineno) {},
             post: static function (AbstractUserAuthentication $authenticator, array $params, array $return, ?\Throwable $exception) use (&$activeLogin) {
                 $activeLogin = $return['status'] === LoginType::LOGIN->value;
             }
@@ -229,8 +225,7 @@ final class Typo3CoreInstrumentation
         hook(
             AbstractUserAuthentication::class,
             'checkAuthentication',
-            pre: static function (AbstractUserAuthentication $authenticator, array $params, string $class, string $function, ?string $filename, ?int $lineno) {
-            },
+            pre: static function (AbstractUserAuthentication $authenticator, array $params, string $class, string $function, ?string $filename, ?int $lineno) {},
             post: static function (AbstractUserAuthentication $authenticator, array $params, mixed $return, ?\Throwable $exception) use ($instrumentation, &$activeLogin) {
                 if (!$activeLogin) {
                     return;
@@ -294,7 +289,7 @@ final class Typo3CoreInstrumentation
         hook(
             ReferenceIndex::class,
             'updateRefIndexTable',
-            pre: static function (ReferenceIndex $obj, array $params, string $class, string $function, ?string $filename, ?int $lineno) use ($instrumentation, $method) {
+            pre: static function (ReferenceIndex $obj, array $params, string $class, string $function, ?string $filename, ?int $lineno) use ($instrumentation) {
                 $parent = Context::getCurrent();
 
                 $spanBuilder = $instrumentation->tracer()
@@ -389,7 +384,6 @@ final class Typo3CoreInstrumentation
 
     /**
      * @param \Throwable|null $exception
-     * @return void
      */
     private static function endSpanWithoutReturnValue(?\Throwable $exception): void
     {

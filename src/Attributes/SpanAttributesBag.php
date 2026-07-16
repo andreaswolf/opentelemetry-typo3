@@ -10,7 +10,11 @@ namespace a9f\OpenTelemetryTYPO3\Attributes;
  * Instrumentations should add attributes here when they want to pass them to child spans, e.g. user IDs, request IDs,
  * plugin names etc.
  *
+ * Supported types are either plain scalars or lists of scalars (array keys will be ignored)
+ *
  * @see SpanAttributesProcessor for the processor that automatically adds the attributes to spans.
+ *
+ * @phpstan-type TAttributeType scalar|array<int, scalar>
  */
 final class SpanAttributesBag
 {
@@ -22,12 +26,13 @@ final class SpanAttributesBag
     }
 
     /**
-     * @param array<non-empty-string, scalar> $attributes
+     * @param array<non-empty-string, TAttributeType> $attributes
      */
     public function __construct(private array $attributes = []) {}
 
     /**
      * @param non-empty-string $key
+     * @param TAttributeType $value
      */
     public function add(string $key, mixed $value): self
     {
@@ -42,7 +47,7 @@ final class SpanAttributesBag
     }
 
     /**
-     * @return array<non-empty-string, scalar>
+     * @return array<non-empty-string, TAttributeType>
      */
     public function getAll(): array
     {

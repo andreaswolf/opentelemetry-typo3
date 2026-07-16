@@ -24,20 +24,16 @@ final class RequestPropagationGetter implements PropagationGetterInterface
     }
 
     /**
-     * @param Request $carrier
      * @return list<string>
      */
-    public function keys($carrier): array
+    public function keys(mixed $carrier): array
     {
         assert($carrier instanceof Request);
 
         return array_keys($carrier->getHeaders());
     }
 
-    /**
-     * @param Request $carrier
-     */
-    public function get($carrier, string $key): ?string
+    public function get(mixed $carrier, string $key): ?string
     {
         assert($carrier instanceof Request);
 
