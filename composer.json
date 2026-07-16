@@ -6,9 +6,9 @@
         "psr-4": {
             "a9f\\OpenTelemetryTYPO3\\": "src/"
         },
-	"files": [
+        "files": [
             "_register.php"
-	]
+        ]
     },
     "require": {
         "ext-opentelemetry": "*",
@@ -21,6 +21,21 @@
         "typo3/cms-frontend": "^12.4 || ^13.4"
     },
     "config": {
-        "sort-packages": true
+        "sort-packages": true,
+        "allow-plugins": {
+            "ergebnis/composer-normalize": true,
+            "php-http/discovery": true,
+            "tbachert/spi": true,
+            "typo3/class-alias-loader": true,
+            "typo3/cms-composer-installers": true
+        }
+    },
+    "require-dev": {
+        "ergebnis/composer-normalize": "^2.52",
+        "friendsofphp/php-cs-fixer": "^3.95"
+    },
+    "scripts": {
+        "cs:check": "@cs:fix --diff --verbose --dry-run",
+        "cs:fix": "php-cs-fixer fix --ansi"
     }
 }
