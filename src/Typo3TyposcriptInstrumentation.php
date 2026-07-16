@@ -15,6 +15,7 @@ use OpenTelemetry\Context\ContextInterface;
 use OpenTelemetry\SemConv\Attributes\CodeAttributes;
 use OpenTelemetry\SemConv\TraceAttributes;
 use TYPO3\CMS\Frontend\ContentObject\ContentObjectRenderer;
+
 use function OpenTelemetry\Instrumentation\hook;
 
 final class Typo3TyposcriptInstrumentation
