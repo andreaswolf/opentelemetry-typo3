@@ -24,10 +24,9 @@ final class ResponsePropagationSetter implements PropagationSetterInterface
     }
 
     /**
-     * @param ResponseInterface $carrier
      * @return list<string>
      */
-    public function keys($carrier): array
+    public function keys(mixed $carrier): array
     {
         assert($carrier instanceof ResponseInterface);
 
@@ -35,10 +34,7 @@ final class ResponsePropagationSetter implements PropagationSetterInterface
         return array_keys($carrier->getHeaders());
     }
 
-    /**
-     * @param ResponseInterface $carrier
-     */
-    public function set(&$carrier, string $key, string $value): void
+    public function set(mixed &$carrier, string $key, string $value): void
     {
         assert($carrier instanceof ResponseInterface);
 

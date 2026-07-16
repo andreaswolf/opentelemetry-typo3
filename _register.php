@@ -66,9 +66,9 @@ if (Sdk::isDisabled() || Sdk::isInstrumentationDisabled(Typo3CoreInstrumentation
             ->withMeterProvider($meterProvider);
     });
 })();
-if (Sdk::isInstrumentationDisabled(Typo3CoreInstrumentation::NAME) === false) {
-    Typo3CoreInstrumentation::register();
-}
+
+Typo3CoreInstrumentation::register();
+
 if (Sdk::isInstrumentationDisabled(Typo3ExtbaseInstrumentation::NAME) === false) {
     Typo3ExtbaseInstrumentation::register();
 }
