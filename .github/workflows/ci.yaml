@@ -43,7 +43,6 @@ jobs:
           - "8.4"
           - "8.5"
         typo3-version:
-          - "12"
           - "13"
         command:
           - "cs:check"
