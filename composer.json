@@ -43,7 +43,7 @@
         }
     },
     "scripts": {
-        "php:static": "phpstan analyze --memory-limit=256M",
+        "php:static": "phpstan analyze --memory-limit=512M",
         "cs:check": "@cs:fix --diff --verbose --dry-run",
         "cs:fix": "php-cs-fixer fix --ansi"
     }
