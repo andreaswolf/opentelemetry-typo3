@@ -44,6 +44,7 @@ jobs:
           - "8.5"
         typo3-version:
           - "13"
+          - "14"
         command:
           - "cs:check"
           - "php:static"

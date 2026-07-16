@@ -8,18 +8,18 @@
         "open-telemetry/api": "^1.7",
         "open-telemetry/sdk": "^1.10",
         "open-telemetry/sem-conv": "^1.37",
-        "typo3/cms-backend": "^13.4",
-        "typo3/cms-core": "^13.4",
-        "typo3/cms-extbase": "^13.4",
-        "typo3/cms-frontend": "^13.4",
-        "typo3/cms-install": "^13.4",
-        "typo3/cms-redirects": "^13.4"
+        "typo3/cms-backend": "^13.4 || ^14.3",
+        "typo3/cms-core": "^13.4 || ^14.3",
+        "typo3/cms-extbase": "^13.4 || ^14.3",
+        "typo3/cms-frontend": "^13.4 || ^14.3",
+        "typo3/cms-install": "^13.4 || ^14.3",
+        "typo3/cms-redirects": "^13.4 || ^14.3"
     },
     "require-dev": {
         "ergebnis/composer-normalize": "^2.52",
         "friendsofphp/php-cs-fixer": "^3.95",
-        "phpstan/phpstan": "^1.12 || ^2.2",
-        "saschaegerer/phpstan-typo3": "^1.10 || ^2.1 || ^3.0"
+        "phpstan/phpstan": "^2.2",
+        "saschaegerer/phpstan-typo3": "^3.0"
     },
     "autoload": {
         "psr-4": {
@@ -43,7 +43,7 @@
         }
     },
     "scripts": {
-        "php:static": "phpstan analyze --memory-limit=256M",
+        "php:static": "phpstan analyze --memory-limit=512M",
         "cs:check": "@cs:fix --diff --verbose --dry-run",
         "cs:fix": "php-cs-fixer fix --ansi"
     }
