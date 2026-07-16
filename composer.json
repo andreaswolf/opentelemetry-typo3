@@ -1,7 +1,21 @@
 {
     "name": "a9f/opentelemetry-auto-typo3",
-    "type": "library",
     "description": "OpenTelemetry integration for TYPO3",
+    "type": "library",
+    "require": {
+        "php": "^8.3",
+        "ext-opentelemetry": "*",
+        "open-telemetry/api": "^1.7",
+        "open-telemetry/sdk": "^1.10",
+        "open-telemetry/sem-conv": "^1.37",
+        "typo3/cms-core": "^12.4 || ^13.4",
+        "typo3/cms-extbase": "^12.4 || ^13.4",
+        "typo3/cms-frontend": "^12.4 || ^13.4"
+    },
+    "require-dev": {
+        "ergebnis/composer-normalize": "^2.52",
+        "friendsofphp/php-cs-fixer": "^3.95"
+    },
     "autoload": {
         "psr-4": {
             "a9f\\OpenTelemetryTYPO3\\": "src/"
@@ -10,29 +24,15 @@
             "_register.php"
         ]
     },
-    "require": {
-        "ext-opentelemetry": "*",
-        "php": "^8.3",
-        "open-telemetry/api": "^1.7",
-        "open-telemetry/sem-conv": "^1.37",
-        "open-telemetry/sdk": "^1.10",
-        "typo3/cms-core": "^12.4 || ^13.4",
-        "typo3/cms-extbase": "^12.4 || ^13.4",
-        "typo3/cms-frontend": "^12.4 || ^13.4"
-    },
     "config": {
-        "sort-packages": true,
         "allow-plugins": {
             "ergebnis/composer-normalize": true,
             "php-http/discovery": true,
             "tbachert/spi": true,
             "typo3/class-alias-loader": true,
             "typo3/cms-composer-installers": true
-        }
-    },
-    "require-dev": {
-        "ergebnis/composer-normalize": "^2.52",
-        "friendsofphp/php-cs-fixer": "^3.95"
+        },
+        "sort-packages": true
     },
     "scripts": {
         "cs:check": "@cs:fix --diff --verbose --dry-run",
