@@ -8,12 +8,12 @@
         "open-telemetry/api": "^1.7",
         "open-telemetry/sdk": "^1.10",
         "open-telemetry/sem-conv": "^1.37",
-        "typo3/cms-backend": "^13.4",
-        "typo3/cms-core": "^13.4",
-        "typo3/cms-extbase": "^13.4",
-        "typo3/cms-frontend": "^13.4",
-        "typo3/cms-install": "^13.4",
-        "typo3/cms-redirects": "^13.4"
+        "typo3/cms-backend": "^13.4 || ^14.3",
+        "typo3/cms-core": "^13.4 || ^14.3",
+        "typo3/cms-extbase": "^13.4 || ^14.3",
+        "typo3/cms-frontend": "^13.4 || ^14.3",
+        "typo3/cms-install": "^13.4 || ^14.3",
+        "typo3/cms-redirects": "^13.4 || ^14.3"
     },
     "require-dev": {
         "ergebnis/composer-normalize": "^2.52",
